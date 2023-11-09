@@ -1,0 +1,241 @@
+(*1b*)
+
+
+Fixpoint FuncBool (n : nat) :=
+  match n with
+  | 0 => bool
+  | S m => bool -> FuncBool m
+  end.
+Fixpoint isAlwaysTrue (n : nat) : FuncBool n -> bool :=
+  match n as m return (FuncBool m -> bool) with
+    | 0 => (fun (x: (FuncBool 0)) => x)
+    | S m => ( (fun (x: FuncBool (S m)) =>
+       (andb ( (isAlwaysTrue m)( x true ) ) ( (isAlwaysTrue m)(x false) ))))
+end.
+
+Lemma isAlwaysTrueIsCorrectFor2 : forall f, (forall b1 b2, f b1 b2 = true) -> isAlwaysTrue 2 f = true.
+Proof.
+intros.
+simpl.
+assert (H1 : f true true = true).
+apply H.
+assert (H2 : f true false=true).
+apply H.
+assert (H3 : f false true=true).
+apply H.
+assert (H4 : f false false=true).
+apply H.
+rewrite H1.
+rewrite H2.
+rewrite H3.
+rewrite H4.
+reflexivity.
+Qed.
+
+
+
+(*2*)
+Lemma logikai1 : forall A B : Prop,  (~ A \/ B) -> A -> B.
+Proof.
+intros.
+destruct H as [K|L].
+contradiction.
+apply L.
+Qed.
+Lemma logikai2 : forall A B : Prop,  A -> B -> (~ A \/ B).
+Proof.
+intros.
+unfold not.
+auto.
+Qed.
+Lemma logikai3 : forall A B : Prop, (A\/~A)->((A -> B) -> A) -> A.
+(*klasszikus logikai feltétellel való igazolás*)
+Proof.
+  intros.
+  destruct H as [K|L].
+exact K.
+unfold not in L.
+intuition.
+Qed.
+
+
+(*3*)
+
+Lemma quant_1 : forall (U : Type) (P : U -> Prop),
+inhabited U -> ((exists x : U, P x) \/ ~ (exists x : U, P x))
+-> ~ (forall x : U, ~ P x) -> (exists x : U, P x).
+Proof.
+intros.
+destruct H0 as [K|L].
+apply K.
+unfold not in L,H1.
+elim H1.
+intros.
+apply L.
+exists x.
+apply H0.
+Qed.
+Lemma quant_2 : forall (U : Type) (P : U -> U -> Prop),
+inhabited U -> (exists x, forall y, P x y) -> (forall y, exists x, P x y).
+Proof.
+intros.
+elim H0.
+intros.
+exists x.
+apply H1.
+Qed.
+
+
+
+(*4*)
+Require Import Relation_Definitions.
+Class PartialOrder := PO_mk { 
+    P : Type;
+    R : relation P;
+    PO_Reflexive : @reflexive P R;
+    PO_Transitive : @transitive P R;
+    PO_Antisymmetric : @antisymmetric P R;
+  }.
+
+Inductive tree (T : PartialOrder) :=
+  | leaf : (@P T) -> tree T
+  | node : (@P T) -> tree T -> tree T -> tree T.
+
+Definition value (T : PartialOrder) (t : tree T) : @P T :=
+match t with 
+  | leaf _ a => a 
+  | node _ a t1 t2 => a
+end. 
+Definition isBST (T : PartialOrder) (t : tree T) : Prop :=
+match t with 
+  | leaf _ _ => True
+  | node _ a t1 t2 => (@R T (value T t1) a) /\ (@R T a (value T t2)) 
+end.
+Fixpoint isBST2 (T : PartialOrder) (t : tree T) : Prop :=
+match t with 
+  | leaf _ _ => True
+  | node _ a t1 t2 => (@R T (value T t1) a) /\ (@R T a (value T t2))/\ (isBST2 T t1) /\ (isBST2 T t2)
+end.
+Axiom linear: (forall (T:PartialOrder),forall (a b: @P T),{@R T a b}+{@R T b a}).
+Fixpoint maxValue(T:PartialOrder)(t:tree T):@P T:=
+match t with
+| leaf _ a => a
+| node _ a t1 t2 => match(linear T(value T t1) (value T t2))with 
+|left _ => maxValue T t2
+| right _ => maxValue T t1
+end
+end.
+Lemma BST_correct (T : PartialOrder) (t : tree T) : isBST T t.
+Proof.
+  induction t.
+  all:simpl;auto.
+split.
+apply PO_Transitive with (value T t1).
+apply PO_Transitive with (value T t2).
+Abort.
+(*elakadtam a 4-es feladat lemma helyes felírásában és bizonyításában*)
+
+
+
+(*5a*)
+Require Import Relation_Definitions.
+
+Fixpoint revertTree {T : PartialOrder} (t : tree T) : tree T :=
+  match t with
+  | leaf _ a => leaf _ a
+  | node _ a t1 t2 => node _ a (revertTree t2) (revertTree t1)
+  end.
+Theorem revertTreeSound : forall {T : PartialOrder} (t : tree T),
+  revertTree (revertTree t) = t.
+Proof.
+induction t.
+all:simpl;auto.
+rewrite IHt1.
+rewrite IHt2.
+auto.
+Qed.
+
+
+
+
+(*5b*)
+
+Inductive nat_tree :=
+  | nat_leaf : nat -> nat_tree
+  | nat_node : nat -> nat_tree -> nat_tree -> nat_tree.
+
+Definition nat_value (t : nat_tree) : nat :=
+  match t with
+  | nat_leaf a => a
+  | nat_node a _ _ => a
+  end.
+
+Definition nat_isBST (t : nat_tree) : Prop :=
+  match t with
+  | nat_leaf _ => True
+  | nat_node a t1 t2 => le   (nat_value t1) a /\ le a (nat_value t2)
+  end.
+
+Fixpoint nat_isBST2 (t : nat_tree) : Prop :=
+  match t with
+  | nat_leaf _ => True
+  | nat_node a t1 t2 => le (nat_value t1) a /\ le a (nat_value t2) /\ nat_isBST2 t1 /\ nat_isBST2 t2
+  end.
+
+Fixpoint nat_maxValue(t : nat_tree) : nat :=
+  match t with
+  | nat_leaf a => a
+  | nat_node a t1 t2 =>
+      if Nat.leb (nat_value t1) (nat_value t2) then nat_maxValue t2
+      else nat_maxValue t1
+  end.
+
+Fixpoint nat_revertTree (t : nat_tree) : nat_tree :=
+  match t with
+  | nat_leaf a => nat_leaf a
+  | nat_node a t1 t2 => nat_node a (nat_revertTree t2) (nat_revertTree t1)
+  end.
+
+Theorem nat_revertTreeSound : forall (t : nat_tree),
+  nat_revertTree (nat_revertTree t) = t.
+Proof.
+  induction t.
+  all: simpl; auto.
+  rewrite IHt1, IHt2.
+  auto.
+Qed.
+
+
+
+(*6a*)
+
+Require Import Coq.Vectors.Vector.
+Import VectorNotations.
+Inductive vector (A : Type) : nat -> Type :=
+  | VNil : vector A 0
+  | VCons : forall (n : nat), A -> vector A n -> vector A (S n).
+
+Fixpoint vector_length {A : Type} {n : nat} (v : vector A n) : nat :=
+  match v with
+  | VNil _ => 0
+  | VCons _ _ _ v' => S (vector_length v')
+  end.
+Lemma vector_length_correct : forall (A : Type) (n : nat) (v : vector A n), vector_length v = n.
+Proof.
+  intros.
+  induction v;simpl.
+  - reflexivity.
+  - rewrite IHv.
+    reflexivity.
+Qed.
+Inductive nList(A:Type):nat->Type:=
+|nNil:nList A 0
+| nCons:forall(n:nat),A->nList A n-> nList A(S n).
+Fixpoint nListAppend(A:Type)( n m:nat)(l1:nList A n)(l2: nList A m): nList A (n+m):=
+match l1 with
+|nNil _=>l2
+|nCons _ n' a l' => nCons _ (n'+m) a (nListAppend A n' m l' l2)
+end.
+
+
+
