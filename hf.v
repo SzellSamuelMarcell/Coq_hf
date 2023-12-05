@@ -296,7 +296,7 @@ intros.
 assert (K : Pf (A0 ∧ B)).
 apply CnjInt.
 all:auto.
-apply (CnjEli A0 B C) in K.
-apply K.
-Admitted.
- (*elakadtam ennel*) 
+apply ImpEli with (A:=A0∧B) (B:=C).
+auto.
+auto.
+Qed. 
