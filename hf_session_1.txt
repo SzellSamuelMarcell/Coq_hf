@@ -1,0 +1,147 @@
+/***************************************************************************//**
+ * @file
+ * @brief Top level application functions
+ *******************************************************************************
+ * # License
+ * <b>Copyright 2020 Silicon Laboratories Inc. www.silabs.com</b>
+ *******************************************************************************
+ *
+ * The licensor of this software is Silicon Laboratories Inc. Your use of this
+ * software is governed by the terms of Silicon Labs Master Software License
+ * Agreement (MSLA) available at
+ * www.silabs.com/about-us/legal/master-software-license-agreement. This
+ * software is distributed to you in Source Code format and is governed by the
+ * sections of the MSLA applicable to Source Code.
+ *
+ ******************************************************************************/
+#include "app.h"
+/***************************************************************************//**
+ * Initialize application.
+ ******************************************************************************/
+void app_init(void)
+{
+  //TODO CMU
+  //TODO GPIO
+  //TODO interrupt handler
+  //TODO lcd eredmény
+  //
+}
+/*
+typedef enum {UPPER, MIDDLE, LOWER, UPPERLEFT, LOWERLEFT} segment;
+
+typedef struct Position {
+  int rank;
+  segment seg;
+} Position;
+
+typedef enum{UP, DOWN, LEFT, RIGHT} direction;
+typedef enum{NON,LEFTBUTTON,RIGHTBUTTON} button;
+*/
+/*void TIMER1_IRQHandler(void){
+
+}   */    /**< TIMER1 IRQ Handler */
+//balra fordulas
+void GPIO_EVEN_IRQHandler(void)  /**< GPIO EVEN IRQ Handler */
+{
+  //gombnyomás flaget állít
+}
+void GPIO_ODD_IRQHandler(void){ //jobbra fordulas
+
+}
+void TIMER0_IRQHandler(void)       /**< TIMER0 IRQ Handler */
+{
+  //flag, hogy jött egy lépés
+}
+
+direction nextDirection(direction prevd, button b) {
+  direction nextd;
+  if (RIGHTBUTTON == b) {
+      nextd = (prevd+1) % 4;
+  } else if (NONE == b) {
+      nextd = prevd;
+  } else {
+      nextd = (prevd+3) % 4;
+  }
+}
+
+Head nextHead(int prevNose, direction dir) {
+  Head nh;
+  switch (dir) {
+    case LEFT: nh.nose = (prevNose+7) % 8;
+    if (0 == prevNose % 8) {
+        nh.headsegment = prevNose+6;
+    } else {
+        nh.headsegment = prevNose-1;
+    }
+    break;
+    case RIGHT: nh.nose = (prevNose+1) % 8;
+    if (7 == prevNose % 8) {
+        nh.headsegment = prevNose-7;
+    } else {
+        nh.headsegment = prevNose;
+    }
+     break;
+    case DOWN:
+      if (prevNose <= 15) {
+          nh.nose = prevNose + 8;
+          nh.headsegment = prevNose+24;
+      } else {
+          nh.nose = prevNose - 8;
+          nh.headsegment = prevNose+8;
+      } break;
+    case UP:
+      if (prevNose >= 8) {
+          nh.nose = prevNose - 8;
+          nh.headsegment = prevNose+16;
+      } else {
+          nh.nose = prevNose + 8;
+          nh.headsegment = prevNose+32;
+      } break;
+  }
+}
+
+typedef struct {
+  int no;
+  int bit;
+} ledSegment;
+
+ledSegment toLedSegment(int seg) {
+  ledSegment ld;
+  if (seg <= 6) {
+      ld.no = seg;
+      ld.bit = 1; //A segment
+  } else if (seg <= 14) {
+      ld.no = seg-8;
+      ld.bit = 1<<8 || 1<<9; //gm segment
+  } else if (seg <= 23) {
+      ld.no = seg-16;
+      ld.bit = 1<<3; //d segment
+  } else if (seg <= 30) {
+      ld.no = seg-24;
+      ld.bit = 1<<5; //f segment
+  } else if (seg == 31) {
+      ld.no = 6;
+      ld.bit = 1<<1; //b segment
+  } else if (seg <= 38) {
+      ld.no = seg-32;
+      ld.bit = 1<<4; //e segment
+  } else if (seg == 39) {
+      ld.no = 6;
+      ld.bit = 1<<2; //c segment
+  }
+}
+
+typedef struct {
+  Head data[40];
+  int first;
+  int afterLast;
+} circbuffer;
+
+
+/***************************************************************************//**
+ * App ticking function.
+ ******************************************************************************/
+void app_process_action(void)
+{
+
+}
